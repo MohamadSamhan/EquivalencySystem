@@ -1,0 +1,101 @@
+# Contributing to EquivalencyAPI
+
+Thank you for contributing to EquivalencyAPI. This document describes the repository's expectations, coding standards, workflow, and how to get started. It is authoritative for team conventions and required for pull requests.
+
+## Table of Contents
+
+- Getting Started
+- Branching and Pull Request Workflow
+- Commit Message Guidelines
+- Coding Standards
+  - Formatting
+  - Naming Conventions
+  - Architecture and Layers
+- Database and Migrations
+- Tests
+- Code Review Checklist
+
+## Getting Started
+
+1. Clone the repository.
+2. Create a feature branch from `main` (or the current development branch):
+   - `git checkout -b feat/your-feature-name`
+3. Run the solution in Visual Studio 2022 (recommended) or `dotnet` CLI.
+
+## Branching and Pull Request Workflow
+
+- Branch prefix conventions:
+  - `feat/` - new features
+  - `fix/` - bug fixes
+  - `chore/` - chores and maintenance
+  - `refactor/` - refactoring
+- Open a pull request (PR) against `main` (or the agreed integration branch).
+- Include a clear description, screenshots (if UI), and tests added/changed.
+- At least one approving review is required before merge.
+
+## Commit Message Guidelines
+
+Use imperative, present-tense messages. Example:
+
+```
+Add EquivalencyService.CreateRequest to validate and persist requests
+```
+
+Prefix with ticket/issue id if applicable.
+
+## Coding Standards
+
+This project enforces a consistent style via an `.editorconfig` file. The following are the most important conventions — the `.editorconfig` (checked into repo) is authoritative.
+
+### Formatting
+
+- Use UTF-8 without BOM.
+- Use 4 spaces for indentation.
+- Trim trailing whitespace.
+- Insert a single newline at end of files.
+- Files should use CRLF on Windows when edited in Visual Studio.
+
+### Naming Conventions
+
+- PascalCase for `public` types and members (classes, interfaces, methods, properties).
+- _I_ prefix for interfaces (e.g., `IEquivalencyService`).
+- _camelCase_ for private fields; prefix with `_` for private fields when preferred (e.g., `_dbContext`).
+- Use clear, descriptive names for variables and parameters.
+
+### Architecture and Layers
+
+- Organize code into these folders/namespaces:
+  - `Models` — EF Core entity classes and enums.
+  - `Data` — `ApplicationDbContext` and DbContext-related code.
+  - `Services` — business logic interfaces and implementations.
+  - `Controllers` — API controllers.
+- Controllers should be thin and delegate business logic to services.
+- Services should accept `ApplicationDbContext` via constructor DI and avoid static state.
+
+## Database and Migrations
+
+- Use Entity Framework Core migrations to manage schema.
+- Run migrations locally before creating a PR that changes the model.
+  - `Add-Migration YourMigrationName`
+  - `Update-Database`
+- Keep migration names meaningful.
+
+## Tests
+
+- Include unit tests for business logic in `Services`.
+- Aim for meaningful test coverage for critical service methods.
+
+## Code Review Checklist
+
+- Is the code formatted and lint-free?
+- Do method and variable names follow the naming rules?
+- Are controllers thin and services responsible for logic?
+- Are EF queries efficient and avoid N+1 issues?
+- Are migrations included if models changed?
+- Are new public APIs covered by tests where appropriate?
+
+---
+
+If a new team preference arises (formatting, naming, or workflow), add it to this file and update the repository `.editorconfig` accordingly.
+
+Thank you for helping maintain a high-quality codebase.
