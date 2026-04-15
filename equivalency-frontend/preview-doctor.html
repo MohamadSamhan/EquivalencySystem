@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>معاينة - لوحة الدكتور</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Layout Adjustments for Preview */
+      .demo-banner {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: white;
+        text-align: center;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .app-layout { padding-top: 40px; }
+    </style>
+</head>
+<body>
+
+<!-- Demo Banner -->
+<div class="demo-banner">
+  👨‍🏫 وضع المعاينة - لوحة الدكتور (بيانات تجريبية)
+  <a href="app.html" style="color: #60a5fa; text-decoration: underline; margin-right: 15px;">العودة لصفحة الدخول</a>
+</div>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+// ========== Mock Data for Doctor ==========
+const MOCK_STATS = {
+  total: 45,
+  pending: 12,
+  approved: 28,
+  rejected: 5
+};
+
+const MOCK_REQUESTS = [
+  { id: 101, studentName: 'أحمد علي', studentCourseName: 'برمجة 1', targetCourseName: 'أساسيات البرمجة', similarity: 88, status: 'Pending', university: 'جامعة اليرموك' },
+  { id: 102, studentName: 'سارة محمد', studentCourseName: 'رياضيات 2', targetCourseName: 'حساب التفاضل والتكامل', similarity: 94, status: 'Pending', university: 'جامعة القاهرة' },
+  { id: 103, studentName: 'محمود خالد', studentCourseName: 'فيزياء عامة', targetCourseName: 'فيزياء 101', similarity: 65, status: 'Pending', university: 'الجامعة الأردنية' },
+  { id: 104, studentName: 'ليلى إبراهيم', studentCourseName: 'قواعد البيانات', targetCourseName: 'نظم إدارة قواعد البيانات', similarity: 72, status: 'Pending', university: 'جامعة العلوم والتكنولوجيا' },
+  { id: 105, studentName: 'ياسين حسن', studentCourseName: 'هياكل البيانات', targetCourseName: 'خوارزميات وهياكل بيانات', similarity: 42, status: 'Pending', university: 'جامعة عين شمس' },
+];
+
+// ========== Navbar Component ==========
+function Navbar({ currentPage, onNavigate }) {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const links = [
+    { id: 'doctor-dashboard', label: 'الرئيسية', icon: '🏠' },
+    { id: 'review-requests', label: 'مراجعة الطلبات', icon: '📝' },
+  ];
+
+  return (
+    <>
+      <div className="mobile-header">
+        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
+        <span style={{ fontWeight: 700, fontSize: 15 }}>لوحة مراجعة المواد</span>
+      </div>
+      {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+      <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} dir="rtl">
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="sidebar-brand-icon" style={{ background: '#475569' }}>👨‍🏫</div>
+            <div>
+              <div className="sidebar-brand-text">نظام المعادلة</div>
+              <div className="sidebar-brand-sub">بوابة الدكتور</div>
+            </div>
+          </div>
+        </div>
+        <div className="sidebar-nav">
+          <div className="sidebar-section-label">قائمة التحكم</div>
+          {links.map((link) => (
+            <button key={link.id} className={`sidebar-link ${currentPage === link.id ? 'active' : ''}`} onClick={() => { onNavigate(link.id); setMobileOpen(false); }}>
+              <span className="sidebar-link-icon">{link.icon}</span>
+              {link.label}
+            </button>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-user-avatar" style={{ background: '#475569' }}>د</div>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">محمد</div>
+              <div className="sidebar-user-role">رئيس قسم</div>
+            </div>
+          </div>
+          <button className="logout-btn" onClick={() => window.location.href = 'app.html'}>
+            <span className="sidebar-link-icon">🚪</span> خروج
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+
+// ========== Doctor Dashboard Component ==========
+function DoctorDashboard({ onNavigate }) {
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">مرحباً د. محمد 👋</h1>
+        <p className="page-subtitle">نظرة عامة على طلبات المعادلة التي تنتظر مراجعتك.</p>
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="stat-card">
+          <div className="stat-card-icon blue">📝</div>
+          <div className="stat-card-value">{MOCK_STATS.total}</div>
+          <div className="stat-card-label">إجمالي الطلبات</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon orange">⏳</div>
+          <div className="stat-card-value">{MOCK_STATS.pending}</div>
+          <div className="stat-card-label">في انتظار المراجعة</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon green">✅</div>
+          <div className="stat-card-value">{MOCK_STATS.approved}</div>
+          <div className="stat-card-label">تمت الموافقة</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon red">❌</div>
+          <div className="stat-card-value">{MOCK_STATS.rejected}</div>
+          <div className="stat-card-label">تم الرفض</div>
+        </div>
+      </div>
+
+      <div className="action-cards" style={{ marginTop: '30px' }}>
+        <div className="action-card" onClick={() => onNavigate('review-requests')} style={{ borderRight: '4px solid #3b82f6' }}>
+          <div className="action-card-icon stat-card-icon blue">📝</div>
+          <div className="action-card-title">بدء مراجعة الطلبات</div>
+          <div className="action-card-desc">مراجعة المواد والوصف الأكاديمي والبت في قرار المعادلة.</div>
+          <div className="action-card-arrow">انتقل للمراجعة ←</div>
+        </div>
+      </div>
+
+      <div className="table-container" style={{ marginTop: '40px' }}>
+        <div className="table-header">
+          <div className="table-title">أحدث الطلبات المستلمة</div>
+        </div>
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>اسم الطالب</th>
+                <th>المادة الأصلية</th>
+                <th>المادة المستهدفة</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MOCK_REQUESTS.slice(0, 3).map((req) => (
+                <tr key={req.id}>
+                  <td style={{ fontWeight: 600 }}>{req.studentName}</td>
+                  <td>{req.studentCourseName}</td>
+                  <td>{req.targetCourseName}</td>
+                  <td>
+                    <span className="badge badge-pending">
+                      <span className="badge-dot"></span> قيد الانتظار
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== Review Requests Page Component ==========
+function ReviewRequestsPage() {
+  const [requests, setRequests] = React.useState(MOCK_REQUESTS);
+  const [successMsg, setSuccessMsg] = React.useState('');
+
+  const handleDecision = (id, decision) => {
+    setRequests(requests.filter(r => r.id !== id));
+    setSuccessMsg(decision === 'approve' ? 'تمت الموافقة على الطلب بنجاح! ✅' : 'تم رفض الطلب بنجاح. ❌');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const simColor = (s) => s >= 70 ? '#22c55e' : s >= 40 ? '#f59e0b' : '#ef4444';
+  const simClass = (s) => s >= 70 ? 'high' : s >= 40 ? 'medium' : 'low';
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">مراجعة طلبات المعادلة</h1>
+        <p className="page-subtitle">قم بمراجعة المحتوى الأكاديمي وتأكيد قرار المعادلة.</p>
+      </div>
+
+      {successMsg && <div className="alert alert-success"><span>✅</span> {successMsg}</div>}
+
+      <div className="table-container">
+        <div className="table-header">
+          <div className="table-title">الطلبات المعلقة ({requests.length})</div>
+        </div>
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>الطالب / الجامعة</th>
+                <th>المادة (الأصلية ← المستهدفة)</th>
+                <th>نسبة التشابه</th>
+                <th>الإجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((req) => (
+                <tr key={req.id}>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{req.studentName}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>{req.university}</div>
+                  </td>
+                  <td>
+                    <div style={{ color: '#10b981', fontWeight: 500 }}>{req.studentCourseName}</div>
+                    <div style={{ color: '#64748b', fontSize: '13px' }}>← {req.targetCourseName}</div>
+                  </td>
+                  <td>
+                    <div className="similarity-bar">
+                      <div className="similarity-track">
+                        <div className={`similarity-fill ${simClass(req.similarity)}`} style={{ width: `${req.similarity}%` }} />
+                      </div>
+                      <span className="similarity-value" style={{ color: simColor(req.similarity) }}>{req.similarity}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button className="btn btn-success btn-sm" onClick={() => handleDecision(req.id, 'approve')}>✅ موافقة</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDecision(req.id, 'reject')}>❌ رفض</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {requests.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon">📋</div>
+              <div className="empty-state-title">لا توجد طلبات معلقة</div>
+              <p className="empty-state-desc">لقد قمت بمراجعة جميع الطلبات الحالية.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== Main App Component for Doctor Preview ==========
+function App() {
+  const [currentPage, setCurrentPage] = React.useState('doctor-dashboard');
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'doctor-dashboard': return <DoctorDashboard onNavigate={setCurrentPage} />;
+      case 'review-requests': return <ReviewRequestsPage />;
+      default: return <DoctorDashboard onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
+      {renderPage()}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

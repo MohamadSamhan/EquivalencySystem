@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="نظام معادلة المواد الجامعية المدعوم بالذكاء الاصطناعي - قدم وراجع طلبات معادلة المواد." />
+  <title>نظام معادلة المواد الجامعية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- Separated CSS Files -->
+  <link rel="stylesheet" href="css/variables.css?v=2" />
+  <link rel="stylesheet" href="css/base.css?v=2" />
+  <link rel="stylesheet" href="css/layout.css?v=2" />
+  <link rel="stylesheet" href="css/components.css?v=3" />
+  <link rel="stylesheet" href="css/pages.css?v=2" />
+  <!-- Theme initializer: apply saved theme before render to avoid flash -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ==========================================
+    // API SERVICE LAYER
+    // ==========================================
+    const API_BASE_URL = 'https://localhost:7012/api';
+
+    const api = axios.create({
+      baseURL: API_BASE_URL,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    api.interceptors.request.use((config) => {
+      const token = localStorage.getItem('token');
+      // if (token) config.headers.Authorization = `Bearer ${token}`; // ❌ تم الحذف مؤقتاً للتجربة
+      return config;
+    }, (error) => Promise.reject(error));
+
+    api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userName');
+          window.location.hash = '#/login';
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    const authAPI = {
+      login: (email, password) => api.post('/auth/login', { email, password }),
+    };
+    const studentCoursesAPI = {
+      getAll: () => api.get('/studentcourses'),
+      add: (courseData) => api.post('/studentcourses', courseData),
+      delete: (id) => api.delete(`/studentcourses/${id}`),
+    };
+    const universitiesAPI = {
+      getAll: () => api.get('/universities'),
+    };
+    const requestsAPI = {
+      getAll: () => api.get('/requests'),
+      submit: (requestData) => api.post('/requests', requestData),
+      getMyRequests: () => api.get('/requests/my'),
+      approve: (id) => api.put(`/requests/${id}/approve`),
+      reject: (id) => api.put(`/requests/${id}/reject`),
+      getPending: () => api.get('/requests/pending'),
+    };
+    const coursesAPI = {
+      getAll: () => api.get('/courses'),
+    };
+
+    // ==========================================
+    // THEME MANAGER
+    // ==========================================
+    function useTheme() {
+      const [theme, setTheme] = React.useState(
+        () => localStorage.getItem('theme') || 'dark'
+      );
+      const toggleTheme = () => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        localStorage.setItem('theme', next);
+        document.documentElement.setAttribute('data-theme', next);
+      };
+      React.useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+      }, [theme]);
+      return { theme, toggleTheme };
+    }
+
+    // ==========================================
+    // NAVBAR COMPONENT
+    // ==========================================
+    function Navbar({ currentPage, onNavigate, onLogout }) {
+      const role = localStorage.getItem('role') || '';
+      const userName = localStorage.getItem('userName') || 'مستخدم';
+      const [mobileOpen, setMobileOpen] = React.useState(false);
+      const { theme, toggleTheme } = useTheme();
+
+      const studentLinks = [
+        { id: 'student-dashboard', label: 'لوحة التحكم', icon: '🏠' },
+        { id: 'add-course',        label: 'إضافة مساق',   icon: '📚' },
+        { id: 'my-courses',        label: 'مساقاتي',      icon: '📋' },
+        { id: 'requests',          label: 'طلب معادلة',   icon: '🔄' },
+        { id: 'results',           label: 'عرض النتائج',  icon: '📊' },
+      ];
+      const doctorLinks = [
+        { id: 'doctor-dashboard',  label: 'لوحة التحكم',    icon: '🏠' },
+        { id: 'review-requests',   label: 'مراجعة الطلبات', icon: '📝' },
+      ];
+      const links = role === 'Doctor' ? doctorLinks : studentLinks;
+
+      const handleNav = (pageId) => { onNavigate(pageId); setMobileOpen(false); };
+
+      return (
+        <>
+          <div className="mobile-header" dir="rtl">
+            <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>نظام معادلة المواد</span>
+          </div>
+          {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+          <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} dir="rtl">
+            <div className="sidebar-header">
+              <div className="sidebar-brand">
+                <div className="sidebar-brand-icon">⚡</div>
+                <div>
+                  <div className="sidebar-brand-text">معادلة المواد</div>
+                  <div className="sidebar-brand-sub">مدعوم بالذكاء الاصطناعي</div>
+                </div>
+              </div>
+            </div>
+            <div className="sidebar-nav">
+              <div className="sidebar-section-label">التنقل</div>
+              {links.map((link) => (
+                <button key={link.id} className={`sidebar-link ${currentPage === link.id ? 'active' : ''}`} onClick={() => handleNav(link.id)}>
+                  <span className="sidebar-link-icon">{link.icon}</span>
+                  {link.label}
+                </button>
+              ))}
+            </div>
+            <div className="sidebar-footer">
+              <div className="sidebar-user">
+                <div className="sidebar-user-avatar">{userName.charAt(0).toUpperCase()}</div>
+                <div className="sidebar-user-info">
+                  <div className="sidebar-user-name">{userName}</div>
+                  <div className="sidebar-user-role">{role === 'Doctor' ? 'دكتور' : 'طالب'}</div>
+                </div>
+              </div>
+              {/* Theme Toggle */}
+              <button className="theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الغامق'}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                  <span>{theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الغامق'}</span>
+                </span>
+                <div className="theme-toggle-track">
+                  <div className="theme-toggle-thumb" />
+                </div>
+              </button>
+              <button className="logout-btn" onClick={onLogout}>
+                <span className="sidebar-link-icon">🚪</span>
+                تسجيل الخروج
+              </button>
+            </div>
+          </nav>
+        </>
+      );
+    }
+
+    // ==========================================
+    // PROTECTED ROUTE
+    // ==========================================
+    function ProtectedRoute({ children, allowedRoles }) {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      if (!token) return null;
+      if (allowedRoles && !allowedRoles.includes(role)) {
+        return (
+          <div className="main-content">
+            <div className="empty-state">
+              <div className="empty-state-icon">🔒</div>
+              <div className="empty-state-title">Access Denied</div>
+              <div className="empty-state-desc">You don't have permission to access this page.</div>
+            </div>
+          </div>
+        );
+      }
+      return children;
+    }
+
+    // ==========================================
+    // LOGIN PAGE (Arabic SIS Style)
+    // ==========================================
+    function LoginPage({ onLogin }) {
+      const [email, setEmail] = React.useState('');
+      const [password, setPassword] = React.useState('');
+      const [remember, setRemember] = React.useState(false);
+      const [loading, setLoading] = React.useState(false);
+      const [error, setError] = React.useState('');
+
+      React.useEffect(() => {
+        const saved = localStorage.getItem('rememberedUser');
+        if (saved) { setEmail(saved); setRemember(true); }
+      }, []);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!email || !password) { setError('يرجى إدخال البريد الإلكتروني الجامعي وكلمة المرور'); return; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) { setError('يرجى إدخال بريد إلكتروني صالح (مثال: student@yu.edu.jo)'); return; }
+        
+        setLoading(true);
+        console.log('Attempting login to:', API_BASE_URL + '/auth/login');
+        
+        try {
+          const response = await authAPI.login(email, password);
+          let finalName = userName || email;
+          if (finalName && finalName.includes(' ')) {
+            finalName = finalName.split(' ')[0];
+          }
+          localStorage.setItem('userName', finalName);
+          
+          if (remember) localStorage.setItem('rememberedUser', email);
+          else localStorage.removeItem('rememberedUser');
+          
+          onLogin(role);
+        } catch (err) {
+          console.error('Login Error Details:', err);
+          if (err.response) {
+            console.error('Server responded with:', err.response.status, err.response.data);
+            setError(err.response.data?.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          } else if (err.request) {
+            console.error('No response received (CORS or Server Down)');
+            setError('فشل الاتصال بالخادم. تأكد من تشغيل الـ API ومن إعدادات CORS المتوافقة مع بورت 7012.');
+          } else {
+            setError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+          }
+        } finally { setLoading(false); }
+      };
+
+      return (
+        <div className="login-page" dir="rtl">
+          <div className="login-card">
+            <div className="login-header">
+              <img src="https://tse3.mm.bing.net/th/id/OIP.PTZBRYYX0-Mv83-mVEpfWgAAAA?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Logo" className="login-logo-img" />
+              <h1 className="login-title">نظام معادلة المواد الجامعيه</h1>
+            </div>
+
+            {error && <div className="alert alert-error" style={{ marginBottom: '20px' }}><span>⚠️</span> {error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="sis-form-group">
+                <input
+                  id="login-username"
+                  className="sis-input"
+                  type="email"
+                  placeholder="البريد الإلكتروني الجامعي"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  dir="ltr"
+                  style={{ textAlign: 'left', paddingLeft: '15px', paddingRight: '45px' }}
+                />
+                <span className="sis-input-icon" style={{ right: '15px', left: 'auto' }}>📧</span>
+              </div>
+
+              <div className="sis-form-group">
+                <input
+                  id="login-password"
+                  className="sis-input"
+                  type="password"
+                  placeholder="كلمة المرور"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <span className="sis-input-icon">🔑</span>
+              </div>
+
+              <label className="sis-checkbox-container">
+                الاحتفاظ بإسم المستخدم
+                <input
+                  type="checkbox"
+                  className="sis-checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+              </label>
+
+              <a href="#" className="sis-forgot-password" onClick={(e) => e.preventDefault()}>
+                نسيت كلمة المرور
+              </a>
+
+              <button
+                type="submit"
+                className="sis-submit-btn"
+                disabled={loading}
+              >
+                {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // STUDENT DASHBOARD
+    // ==========================================
+    function StudentDashboard({ onNavigate }) {
+      const [stats, setStats] = React.useState({ courses: 0, pending: 0, approved: 0, rejected: 0 });
+      const [loading, setLoading] = React.useState(true);
+      const fullName = localStorage.getItem('userName') || 'طالب';
+      const userName = fullName.includes(' ') ? fullName.split(' ')[0] : fullName;
+
+      React.useEffect(() => {
+        (async () => {
+          try {
+            const [coursesRes, requestsRes] = await Promise.all([
+              studentCoursesAPI.getAll().catch(() => ({ data: [] })),
+              requestsAPI.getMyRequests().catch(() => ({ data: [] })),
+            ]);
+            const courses = Array.isArray(coursesRes.data) ? coursesRes.data : [];
+            const requests = Array.isArray(requestsRes.data) ? requestsRes.data : [];
+            setStats({
+              courses: courses.length,
+              pending: requests.filter(r => r.status === 'Pending').length,
+              approved: requests.filter(r => r.status === 'Approved').length,
+              rejected: requests.filter(r => r.status === 'Rejected').length,
+            });
+          } catch (err) { console.error(err); }
+          finally { setLoading(false); }
+        })();
+      }, []);
+
+      const actionCards = [
+        { id: 'add-course', icon: '📚', iconBg: 'blue', title: 'Add Course', desc: 'Add courses completed at your previous university.' },
+        { id: 'my-courses', icon: '📋', iconBg: 'teal', title: 'My Courses', desc: 'View and manage all your submitted courses.' },
+        { id: 'requests', icon: '🔄', iconBg: 'green', title: 'Request Equivalency', desc: 'Submit a new course equivalency request.' },
+        { id: 'results', icon: '📊', iconBg: 'orange', title: 'View Results', desc: 'Check the status and results of your requests.' },
+      ];
+
+      return (
+        <div className="main-content">
+          <div className="page-header">
+            <h1 className="page-title">مرحباً، {userName} 👋</h1>
+            <p className="page-subtitle">Here's an overview of your course equivalency activity.</p>
+          </div>
+          <div className="dashboard-grid">
+            <div className="stat-card"><div className="stat-card-icon blue">📚</div><div className="stat-card-value">{loading ? '...' : stats.courses}</div><div className="stat-card-label">Added Courses</div></div>
+            <div className="stat-card"><div className="stat-card-icon orange">⏳</div><div className="stat-card-value">{loading ? '...' : stats.pending}</div><div className="stat-card-label">Pending Requests</div></div>
+            <div className="stat-card"><div className="stat-card-icon green">✅</div><div className="stat-card-value">{loading ? '...' : stats.approved}</div><div className="stat-card-label">Approved</div></div>
+            <div className="stat-card"><div className="stat-card-icon red">❌</div><div className="stat-card-value">{loading ? '...' : stats.rejected}</div><div className="stat-card-label">Rejected</div></div>
+          </div>
+          <div className="page-header" style={{ marginTop: 8 }}><h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>Quick Actions</h2></div>
+          <div className="action-cards">
+            {actionCards.map((card) => (
+              <div key={card.id} className="action-card" onClick={() => onNavigate(card.id)} tabIndex={0} role="button" onKeyDown={(e) => e.key === 'Enter' && onNavigate(card.id)}>
+                <div className={`action-card-icon stat-card-icon ${card.iconBg}`}>{card.icon}</div>
+                <div className="action-card-title">{card.title}</div>
+                <div className="action-card-desc">{card.desc}</div>
+                <div className="action-card-arrow">Go to {card.title} →</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // DOCTOR DASHBOARD
+    // ==========================================
+    function DoctorDashboard({ onNavigate }) {
+      const [stats, setStats] = React.useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
+      const [recentRequests, setRecentRequests] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const fullName = localStorage.getItem('userName') || 'دكتور';
+      const userName = fullName.includes(' ') ? fullName.split(' ')[0] : fullName;
+
+      React.useEffect(() => {
+        (async () => {
+          try {
+            const res = await requestsAPI.getAll().catch(() => ({ data: [] }));
+            const requests = Array.isArray(res.data) ? res.data : [];
+            setStats({ total: requests.length, pending: requests.filter(r => r.status === 'Pending').length, approved: requests.filter(r => r.status === 'Approved').length, rejected: requests.filter(r => r.status === 'Rejected').length });
+            setRecentRequests(requests.filter(r => r.status === 'Pending').slice(0, 5));
+          } catch (err) { console.error(err); }
+          finally { setLoading(false); }
+        })();
+      }, []);
+
+      return (
+        <div className="main-content">
+          <div className="page-header">
+            <h1 className="page-title">مرحباً د. {userName} 👋</h1>
+            <p className="page-subtitle">Overview of course equivalency requests awaiting your review.</p>
+          </div>
+          <div className="dashboard-grid">
+            <div className="stat-card"><div className="stat-card-icon blue">📝</div><div className="stat-card-value">{loading ? '...' : stats.total}</div><div className="stat-card-label">Total Requests</div></div>
+            <div className="stat-card"><div className="stat-card-icon orange">⏳</div><div className="stat-card-value">{loading ? '...' : stats.pending}</div><div className="stat-card-label">Pending Review</div></div>
+            <div className="stat-card"><div className="stat-card-icon green">✅</div><div className="stat-card-value">{loading ? '...' : stats.approved}</div><div className="stat-card-label">Approved</div></div>
+            <div className="stat-card"><div className="stat-card-icon red">❌</div><div className="stat-card-value">{loading ? '...' : stats.rejected}</div><div className="stat-card-label">Rejected</div></div>
+          </div>
+          <div className="action-cards">
+            <div className="action-card" onClick={() => onNavigate('review-requests')} tabIndex={0} role="button">
+              <div className="action-card-icon stat-card-icon blue">📝</div>
+              <div className="action-card-title">Review Pending Requests</div>
+              <div className="action-card-desc">Review, approve, or reject student equivalency requests.</div>
+              <div className="action-card-arrow">Go to Reviews →</div>
+            </div>
+          </div>
+          {recentRequests.length > 0 && (
+            <div className="table-container" style={{ marginTop: 28 }}>
+              <div className="table-header"><div className="table-title">Recent Pending Requests</div><button className="btn btn-outline btn-sm" onClick={() => onNavigate('review-requests')}>View All →</button></div>
+              <div className="table-wrapper">
+                <table className="data-table"><thead><tr><th>Student</th><th>Student Course</th><th>Target Course</th><th>Status</th></tr></thead>
+                  <tbody>{recentRequests.map((req, idx) => (<tr key={idx}><td style={{ fontWeight: 600, color: '#e2e8f0' }}>{req.studentName || 'N/A'}</td><td>{req.studentCourseName || 'N/A'}</td><td>{req.targetCourseName || 'N/A'}</td><td><span className="badge badge-pending"><span className="badge-dot"></span>Pending</span></td></tr>))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ==========================================
+    // ADD COURSE PAGE — Enhanced Arabic Design
+    // ==========================================
+    function AddCoursePage({ onNavigate }) {
+      const [courseName, setCourseName] = React.useState('');
+      const [creditHours, setCreditHours] = React.useState('');
+      const [description, setDescription] = React.useState('');
+      const [universityId, setUniversityId] = React.useState('');
+      const [pdfFile, setPdfFile] = React.useState(null);
+      const [universities, setUniversities] = React.useState([]);
+      const [loading, setLoading] = React.useState(false);
+      const [loadingUnis, setLoadingUnis] = React.useState(true);
+      const [success, setSuccess] = React.useState('');
+      const [error, setError] = React.useState('');
+      const [dragOver, setDragOver] = React.useState(false);
+
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type === 'application/pdf') {
+          setPdfFile(file); setError('');
+        } else if (file) {
+          setError('يرجى اختيار ملف PDF فقط.'); setPdfFile(null);
+        }
+      };
+
+      const handleDrop = (e) => {
+        e.preventDefault(); setDragOver(false);
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') {
+          setPdfFile(file); setError('');
+        } else if (file) {
+          setError('يرجى اختيار ملف PDF فقط.');
+        }
+      };
+
+      React.useEffect(() => {
+        (async () => {
+          try {
+            const res = await universitiesAPI.getAll();
+            setUniversities(Array.isArray(res.data) ? res.data : []);
+          } catch {
+            setUniversities([
+              { id: 1, name: 'جامعة اليرموك' }, { id: 2, name: 'الجامعة الأردنية' },
+              { id: 3, name: 'جامعة العلوم والتكنولوجيا' }, { id: 4, name: 'جامعة مؤتة' },
+              { id: 5, name: 'الجامعة الهاشمية' },
+            ]);
+          } finally { setLoadingUnis(false); }
+        })();
+      }, []);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault(); setError(''); setSuccess('');
+        if (!courseName || !creditHours || !universityId) { setError('يرجى ملء جميع الحقول المطلوبة.'); return; }
+        setLoading(true);
+        try {
+          const token = localStorage.getItem('token');
+          const form = new FormData();
+          form.append('courseName', courseName);
+          form.append('creditHours', creditHours);
+          form.append('description', description);
+          form.append('universityId', universityId);
+          if (pdfFile) form.append('studentFile', pdfFile);
+          await axios.post('https://localhost:7012/api/studentcourses', form, {
+            headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+          });
+          setSuccess('تم إضافة المساق بنجاح! 🎉');
+          setCourseName(''); setCreditHours(''); setDescription(''); setUniversityId(''); setPdfFile(null);
+          setTimeout(() => setSuccess(''), 4000);
+        } catch (err) { setError(err.response?.data?.message || 'فشل في إضافة المساق. يرجى المحاولة مرة أخرى.'); }
+        finally { setLoading(false); }
+      };
+
+      return (
+        <div className="main-content" dir="rtl">
+          <div className="page-header">
+            <h1 className="page-title">إضافة مساق</h1>
+            <p className="page-subtitle">أضف المساقات التي أكملتها في جامعتك السابقة لطلب معادلتها.</p>
+          </div>
+
+          {success && <div className="alert alert-success"><span>✅</span> {success}</div>}
+          {error   && <div className="alert alert-error"><span>⚠️</span> {error}</div>}
+
+          <div className="add-course-layout">
+            {/* Main Form */}
+            <div className="form-card">
+              <h2 className="card-title">📚 معلومات المساق</h2>
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="course-name">اسم المساق *</label>
+                  <input id="course-name" className="form-input" type="text"
+                    placeholder="مثال: مقدمة في علوم الحاسوب"
+                    value={courseName} onChange={(e) => setCourseName(e.target.value)} />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="credit-hours">عدد الساعات *</label>
+                    <input id="credit-hours" className="form-input" type="number" min="1" max="6"
+                      placeholder="مثال: 3"
+                      value={creditHours} onChange={(e) => setCreditHours(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="university-select">الجامعة *</label>
+                    <select id="university-select" className="form-select"
+                      value={universityId} onChange={(e) => setUniversityId(e.target.value)}
+                      disabled={loadingUnis}>
+                      <option value="">{loadingUnis ? 'جاري تحميل الجامعات...' : 'اختر الجامعة'}</option>
+                      {universities.map((uni) => (<option key={uni.id} value={uni.id}>{uni.name}</option>))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="course-desc">وصف المساق</label>
+                  <textarea id="course-desc" className="form-textarea"
+                    placeholder="صف محتوى المساق والمواضيع التي تمت تغطيتها باختصار..."
+                    value={description} onChange={(e) => setDescription(e.target.value)} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">وصف المساق (PDF) لجهاز المقارنة *</label>
+                  <div
+                    className={`file-upload-zone ${pdfFile ? 'has-file' : ''} ${dragOver ? 'dragover' : ''}`}
+                    onClick={() => document.getElementById('pdf-upload-app').click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                  >
+                    <input id="pdf-upload-app" type="file" accept=".pdf" style={{ display: 'none' }} onChange={handleFileChange} />
+                    <span className="file-upload-icon">{pdfFile ? '✅' : '📄'}</span>
+                    <div className="file-upload-text">
+                      {pdfFile ? (
+                        <strong style={{ color: 'var(--success-500)' }}>تم الاختيار: {pdfFile.name}</strong>
+                      ) : (
+                        <><strong>اضغط أو اسحب ملف PDF هنا</strong><br/><small>لرفع وصف المساق الخاص بك</small></>
+                      )}
+                    </div>
+                    {pdfFile && (
+                      <button type="button" className="file-remove-btn"
+                        onClick={(e) => { e.stopPropagation(); setPdfFile(null); }}>
+                        إزالة الملف
+                      </button>
+                    )}
+                  </div>
+                  <p className="file-hint">سيتم استخدام هذا الملف لمقارنة المحتوى العلمي وحساب نسبة التشابه.</p>
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={loading} id="add-course-submit">
+                    {loading ? (<><span className="spinner"></span> جاري الحفظ...</>) : (<>📚 إضافة المساق</>)}
+                  </button>
+                  <button type="button" className="btn btn-outline" onClick={() => onNavigate('my-courses')}>
+                    عرض مساقاتي
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Sidebar hints */}
+            <div className="add-course-sidebar-card">
+              <h3>💡 نصائح مفيدة</h3>
+              <div className="tip-item"><span className="tip-icon">📋</span><span>يجب أن يكون اسم المساق مطابقاً للمسمى الرسمي في كشف علاماتك.</span></div>
+              <div className="tip-item"><span className="tip-icon">📄</span><span>رفع ملف PDF يحسّن دقة نسبة التشابه التي يحسبها الذكاء الاصطناعي.</span></div>
+              <div className="tip-item"><span className="tip-icon">🏫</span><span>اختر الجامعة التي درست فيها المساق بدقة.</span></div>
+              <div className="tip-item"><span className="tip-icon">⏱️</span><span>بعد الإضافة، يمكنك تقديم طلب المعادلة مباشرةً من صفحة "طلب معادلة".</span></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // STUDENT COURSES PAGE
+    // ==========================================
+    function StudentCoursesPage({ onNavigate }) {
+      const [courses, setCourses] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState('');
+
+      React.useEffect(() => {
+        (async () => {
+          try { const res = await studentCoursesAPI.getAll(); setCourses(Array.isArray(res.data) ? res.data : []); }
+          catch (err) { setError('Failed to load courses.'); }
+          finally { setLoading(false); }
+        })();
+      }, []);
+
+      const handleDelete = async (id) => {
+        if (!confirm('Are you sure you want to remove this course?')) return;
+        try { await studentCoursesAPI.delete(id); setCourses(courses.filter(c => c.id !== id)); }
+        catch { alert('Failed to delete course.'); }
+      };
+
+      return (
+        <div className="main-content">
+          <div className="page-header"><h1 className="page-title">My Courses</h1><p className="page-subtitle">Courses you've added from your previous university.</p></div>
+          {error && <div className="alert alert-error"><span>⚠️</span> {error}</div>}
+          <div className="table-container">
+            <div className="table-header"><div className="table-title">Course List ({courses.length})</div><button className="btn btn-primary btn-sm" onClick={() => onNavigate('add-course')}>+ Add New Course</button></div>
+            {loading ? (<div className="loading-screen"><div className="spinner"></div><span>Loading courses...</span></div>)
+              : courses.length === 0 ? (
+                <div className="empty-state"><div className="empty-state-icon">📚</div><div className="empty-state-title">No Courses Yet</div><div className="empty-state-desc">Start by adding courses from your previous university.</div><button className="btn btn-primary" onClick={() => onNavigate('add-course')} style={{ marginTop: 20 }}>+ Add Your First Course</button></div>
+              ) : (
+                <div className="table-wrapper"><table className="data-table"><thead><tr><th>#</th><th>Course Name</th><th>Credit Hours</th><th>University</th><th>Actions</th></tr></thead>
+                  <tbody>{courses.map((course, idx) => (<tr key={course.id || idx}><td style={{ color: '#64748b' }}>{idx + 1}</td><td style={{ fontWeight: 600, color: '#e2e8f0' }}>{course.courseName}</td><td>{course.creditHours}</td><td>{course.universityName || 'N/A'}</td><td><div style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary btn-sm" onClick={() => onNavigate('requests')}>Request Equivalency</button><button className="btn btn-danger btn-sm" onClick={() => handleDelete(course.id)}>🗑️</button></div></td></tr>))}</tbody>
+                </table></div>
+              )}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // REQUESTS PAGE — Enhanced Arabic Design
+    // ==========================================
+    function RequestsPage({ onNavigate }) {
+      const [studentCourses, setStudentCourses] = React.useState([]);
+      const [targetCourses, setTargetCourses] = React.useState([]);
+      const [selectedStudentCourse, setSelectedStudentCourse] = React.useState('');
+      const [selectedTargetCourse, setSelectedTargetCourse] = React.useState('');
+      const [loading, setLoading] = React.useState(false);
+      const [loadingData, setLoadingData] = React.useState(true);
+      const [success, setSuccess] = React.useState('');
+      const [error, setError] = React.useState('');
+
+      React.useEffect(() => {
+        (async () => {
+          try {
+            const [studentRes, coursesRes] = await Promise.all([
+              studentCoursesAPI.getAll().catch(() => ({ data: [] })),
+              coursesAPI.getAll().catch(() => ({ data: [] })),
+            ]);
+            setStudentCourses(Array.isArray(studentRes.data) ? studentRes.data : []);
+            setTargetCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
+          } catch { }
+          finally { setLoadingData(false); }
+        })();
+      }, []);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault(); setError(''); setSuccess('');
+        if (!selectedStudentCourse || !selectedTargetCourse) { setError('يرجى اختيار كلا المساقين.'); return; }
+        setLoading(true);
+        try {
+          await requestsAPI.submit({ studentCourseId: parseInt(selectedStudentCourse), targetCourseId: parseInt(selectedTargetCourse) });
+          setSuccess('تم تقديم طلب المعادلة بنجاح! الحالة: قيد الانتظار 🎉');
+          setSelectedStudentCourse(''); setSelectedTargetCourse('');
+          setTimeout(() => setSuccess(''), 5000);
+        } catch (err) { setError(err.response?.data?.message || 'فشل في تقديم الطلب. يرجى المحاولة مرة أخرى.'); }
+        finally { setLoading(false); }
+      };
+
+      const selectedStudent = studentCourses.find(c => c.id == selectedStudentCourse);
+      const selectedTarget  = targetCourses.find(c => c.id == selectedTargetCourse);
+
+      return (
+        <div className="main-content" dir="rtl">
+          <div className="page-header">
+            <h1 className="page-title">طلب معادلة</h1>
+            <p className="page-subtitle">قدّم طلباً لمعادلة مساق من جامعتك السابقة بمساق في جامعتنا.</p>
+          </div>
+
+          {success && <div className="alert alert-success"><span>✅</span> {success}</div>}
+          {error   && <div className="alert alert-error"><span>⚠️</span> {error}</div>}
+
+          <div className="request-layout">
+            {/* Main Form */}
+            <div className="form-card">
+              <h2 className="card-title">🔄 نموذج طلب المعادلة</h2>
+
+              {loadingData ? (
+                <div className="loading-screen" style={{ minHeight: 200 }}>
+                  <div className="spinner"></div>
+                  <span>جاري تحميل المساقات...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="student-course-select">
+                      مساقك (من الجامعة السابقة) *
+                    </label>
+                    <select id="student-course-select" className="form-select"
+                      value={selectedStudentCourse} onChange={(e) => setSelectedStudentCourse(e.target.value)}>
+                      <option value="">اختر مساقك</option>
+                      {studentCourses.map((c) => (
+                        <option key={c.id} value={c.id}>{c.courseName} ({c.creditHours} ساعات)</option>
+                      ))}
+                    </select>
+                    {studentCourses.length === 0 && (
+                      <div className="course-hint">
+                        ⚠️ لم يتم العثور على مساقات.{' '}
+                        <a onClick={() => onNavigate('add-course')}>أضف مساقاً</a>{' '}أولاً.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="target-course-select">
+                      المساق المستهدف في جامعتنا *
+                    </label>
+                    <select id="target-course-select" className="form-select"
+                      value={selectedTargetCourse} onChange={(e) => setSelectedTargetCourse(e.target.value)}>
+                      <option value="">اختر المساق المستهدف</option>
+                      {targetCourses.map((c) => (
+                        <option key={c.id} value={c.id}>{c.courseName} ({c.creditHours} ساعات)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Live Preview */}
+                  {selectedStudent && selectedTarget && (
+                    <div className="course-preview-box">
+                      <div className="preview-label">👁 معاينة الطلب</div>
+                      <div className="preview-courses">
+                        <div className="preview-course-chip">{selectedStudent.courseName}</div>
+                        <span className="preview-arrow">⇐</span>
+                        <div className="preview-course-chip">{selectedTarget.courseName}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading} id="submit-request-btn">
+                      {loading ? (<><span className="spinner"></span> جاري التقديم...</>) : (<>🔄 تقديم الطلب</>)}
+                    </button>
+                    <button type="button" className="btn btn-outline" onClick={() => onNavigate('results')}>
+                      عرض النتائج
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* How It Works Sidebar */}
+            <div className="how-it-works-card">
+              <h3>⚙️ كيف تعمل المعادلة؟</h3>
+              <div className="step-item">
+                <div className="step-number">١</div>
+                <div className="step-content">
+                  <strong>اختر مساقك</strong>
+                  <span>اختر المساق الذي أكملته في جامعتك السابقة.</span>
+                </div>
+              </div>
+              <div className="step-item">
+                <div className="step-number">٢</div>
+                <div className="step-content">
+                  <strong>اختر المساق المستهدف</strong>
+                  <span>اختر المساق المقابل له في جامعتنا.</span>
+                </div>
+              </div>
+              <div className="step-item">
+                <div className="step-number">٣</div>
+                <div className="step-content">
+                  <strong>تقديم الطلب</strong>
+                  <span>سيتم إرسال طلبك للمراجعة من قِبل الدكتور المختص.</span>
+                </div>
+              </div>
+              <div className="step-item">
+                <div className="step-number">٤</div>
+                <div className="step-content">
+                  <strong>متابعة النتيجة</strong>
+                  <span>يمكنك متابعة حالة طلبك من صفحة "عرض النتائج".</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW RESULTS PAGE
+    // ==========================================
+    function ViewResultsPage({ onNavigate }) {
+      const [requests, setRequests] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const [filter, setFilter] = React.useState('All');
+
+      React.useEffect(() => {
+        (async () => {
+          try { const res = await requestsAPI.getMyRequests(); setRequests(Array.isArray(res.data) ? res.data : []); }
+          catch { }
+          finally { setLoading(false); }
+        })();
+      }, []);
+
+      const filteredRequests = filter === 'All' ? requests : requests.filter(r => r.status === filter);
+      const getSimilarityColor = (s) => s >= 70 ? 'high' : s >= 40 ? 'medium' : 'low';
+      const getBadgeClass = (s) => s === 'Approved' ? 'badge-approved' : s === 'Rejected' ? 'badge-rejected' : 'badge-pending';
+      const simColor = (s) => s >= 70 ? '#22c55e' : s >= 40 ? '#f59e0b' : '#ef4444';
+
+      return (
+        <div className="main-content">
+          <div className="page-header"><h1 className="page-title">Equivalency Results</h1><p className="page-subtitle">Track the status and results of your requests.</p></div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+            {['All', 'Pending', 'Approved', 'Rejected'].map((tab) => (
+              <button key={tab} className={`btn btn-sm ${filter === tab ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter(tab)} style={{ animationName: 'none' }}>
+                {tab} {tab !== 'All' && <span style={{ marginLeft: 6, opacity: 0.7 }}>({requests.filter(r => r.status === tab).length})</span>}
+              </button>
+            ))}
+          </div>
+          <div className="table-container">
+            <div className="table-header"><div className="table-title">Results ({filteredRequests.length})</div><button className="btn btn-primary btn-sm" onClick={() => onNavigate('requests')}>+ New Request</button></div>
+            {loading ? (<div className="loading-screen"><div className="spinner"></div><span>Loading...</span></div>)
+              : filteredRequests.length === 0 ? (
+                <div className="empty-state"><div className="empty-state-icon">📊</div><div className="empty-state-title">{filter === 'All' ? 'No Requests Yet' : `No ${filter} Requests`}</div><div className="empty-state-desc">{filter === 'All' ? 'Submit your first equivalency request.' : `No ${filter.toLowerCase()} requests.`}</div></div>
+              ) : (
+                <div className="table-wrapper"><table className="data-table"><thead><tr><th>#</th><th>My Course</th><th>Target Course</th><th>Similarity</th><th>Status</th></tr></thead>
+                  <tbody>{filteredRequests.map((req, idx) => (
+                    <tr key={req.id || idx}><td style={{ color: '#64748b' }}>{idx + 1}</td><td style={{ fontWeight: 600, color: '#e2e8f0' }}>{req.studentCourseName || 'N/A'}</td><td>{req.targetCourseName || 'N/A'}</td>
+                      <td>{req.similarity != null ? (<div className="similarity-bar"><div className="similarity-track"><div className={`similarity-fill ${getSimilarityColor(req.similarity)}`} style={{ width: `${req.similarity}%` }} /></div><span className="similarity-value" style={{ color: simColor(req.similarity) }}>{req.similarity}%</span></div>) : (<span style={{ color: '#64748b' }}>—</span>)}</td>
+                      <td><span className={`badge ${getBadgeClass(req.status)}`}><span className="badge-dot"></span>{req.status}</span></td></tr>
+                  ))}</tbody>
+                </table></div>
+              )}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // REVIEW REQUESTS PAGE (DOCTOR)
+    // ==========================================
+    function ReviewRequestsPage({ onNavigate }) {
+      const [requests, setRequests] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const [actionLoading, setActionLoading] = React.useState(null);
+      const [filter, setFilter] = React.useState('Pending');
+      const [successMsg, setSuccessMsg] = React.useState('');
+
+      React.useEffect(() => {
+        (async () => {
+          try { const res = await requestsAPI.getAll(); setRequests(Array.isArray(res.data) ? res.data : []); }
+          catch { }
+          finally { setLoading(false); }
+        })();
+      }, []);
+
+      const handleApprove = async (id) => {
+        setActionLoading(id);
+        try { await requestsAPI.approve(id); setRequests(requests.map(r => r.id === id ? { ...r, status: 'Approved' } : r)); setSuccessMsg('Request approved! ✅'); setTimeout(() => setSuccessMsg(''), 3000); }
+        catch { alert('Failed to approve.'); }
+        finally { setActionLoading(null); }
+      };
+      const handleReject = async (id) => {
+        if (!confirm('Reject this request?')) return;
+        setActionLoading(id);
+        try { await requestsAPI.reject(id); setRequests(requests.map(r => r.id === id ? { ...r, status: 'Rejected' } : r)); setSuccessMsg('Request rejected. ❌'); setTimeout(() => setSuccessMsg(''), 3000); }
+        catch { alert('Failed to reject.'); }
+        finally { setActionLoading(null); }
+      };
+
+      const filteredRequests = filter === 'All' ? requests : requests.filter(r => r.status === filter);
+      const getBadgeClass = (s) => s === 'Approved' ? 'badge-approved' : s === 'Rejected' ? 'badge-rejected' : 'badge-pending';
+      const getSimilarityColor = (s) => s >= 70 ? 'high' : s >= 40 ? 'medium' : 'low';
+      const simColor = (s) => s >= 70 ? '#22c55e' : s >= 40 ? '#f59e0b' : '#ef4444';
+
+      return (
+        <div className="main-content">
+          <div className="page-header"><h1 className="page-title">Review Requests</h1><p className="page-subtitle">Review and decide on student course equivalency requests.</p></div>
+          {successMsg && <div className="alert alert-success"><span>✅</span> {successMsg}</div>}
+          <div className="dashboard-grid" style={{ marginBottom: 24 }}>
+            <div className="stat-card"><div className="stat-card-icon orange">⏳</div><div className="stat-card-value">{requests.filter(r => r.status === 'Pending').length}</div><div className="stat-card-label">Pending</div></div>
+            <div className="stat-card"><div className="stat-card-icon green">✅</div><div className="stat-card-value">{requests.filter(r => r.status === 'Approved').length}</div><div className="stat-card-label">Approved</div></div>
+            <div className="stat-card"><div className="stat-card-icon red">❌</div><div className="stat-card-value">{requests.filter(r => r.status === 'Rejected').length}</div><div className="stat-card-label">Rejected</div></div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+            {['Pending', 'Approved', 'Rejected', 'All'].map((tab) => (
+              <button key={tab} className={`btn btn-sm ${filter === tab ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter(tab)} style={{ animationName: 'none' }}>
+                {tab} <span style={{ marginLeft: 6, opacity: 0.7 }}>({tab === 'All' ? requests.length : requests.filter(r => r.status === tab).length})</span>
+              </button>
+            ))}
+          </div>
+          <div className="table-container">
+            <div className="table-header"><div className="table-title">{filter} Requests ({filteredRequests.length})</div></div>
+            {loading ? (<div className="loading-screen"><div className="spinner"></div><span>Loading...</span></div>)
+              : filteredRequests.length === 0 ? (
+                <div className="empty-state"><div className="empty-state-icon">📝</div><div className="empty-state-title">No {filter} Requests</div><div className="empty-state-desc">No {filter.toLowerCase()} requests at this time.</div></div>
+              ) : (
+                <div className="table-wrapper"><table className="data-table"><thead><tr><th>#</th><th>Student Name</th><th>Student Course</th><th>Target Course</th><th>Similarity</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody>{filteredRequests.map((req, idx) => (
+                    <tr key={req.id || idx}><td style={{ color: '#64748b' }}>{idx + 1}</td><td style={{ fontWeight: 600, color: '#e2e8f0' }}>{req.studentName || 'N/A'}</td><td>{req.studentCourseName || 'N/A'}</td><td>{req.targetCourseName || 'N/A'}</td>
+                      <td>{req.similarity != null ? (<div className="similarity-bar"><div className="similarity-track"><div className={`similarity-fill ${getSimilarityColor(req.similarity)}`} style={{ width: `${req.similarity}%` }} /></div><span className="similarity-value" style={{ color: simColor(req.similarity) }}>{req.similarity}%</span></div>) : (<span style={{ color: '#64748b' }}>—</span>)}</td>
+                      <td><span className={`badge ${getBadgeClass(req.status)}`}><span className="badge-dot"></span>{req.status}</span></td>
+                      <td>{req.status === 'Pending' ? (<div style={{ display: 'flex', gap: 8 }}><button className="btn btn-success btn-sm" onClick={() => handleApprove(req.id)} disabled={actionLoading === req.id}>{actionLoading === req.id ? '...' : '✅ Approve'}</button><button className="btn btn-danger btn-sm" onClick={() => handleReject(req.id)} disabled={actionLoading === req.id}>{actionLoading === req.id ? '...' : '❌ Reject'}</button></div>) : (<span style={{ color: '#64748b', fontSize: 13 }}>{req.status}</span>)}</td></tr>
+                  ))}</tbody>
+                </table></div>
+              )}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // APP - MAIN ROUTING
+    // ==========================================
+    function App() {
+      const [currentPage, setCurrentPage] = React.useState('login');
+      const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+      const [role, setRole] = React.useState('');
+
+      React.useEffect(() => {
+        const token = localStorage.getItem('token');
+        const savedRole = localStorage.getItem('role');
+        if (token && savedRole) {
+          setIsAuthenticated(true);
+          setRole(savedRole);
+          const hash = window.location.hash.replace('#/', '');
+          if (hash && hash !== 'login') setCurrentPage(hash);
+          else { const dp = savedRole === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard'; setCurrentPage(dp); window.location.hash = '#/' + dp; }
+        } else { setCurrentPage('login'); window.location.hash = '#/login'; }
+      }, []);
+
+      React.useEffect(() => {
+        const h = () => { const hash = window.location.hash.replace('#/', ''); if (hash) setCurrentPage(hash); };
+        window.addEventListener('hashchange', h);
+        return () => window.removeEventListener('hashchange', h);
+      }, []);
+
+      const navigate = (page) => { setCurrentPage(page); window.location.hash = '#/' + page; window.scrollTo(0, 0); };
+      const handleLogin = (userRole) => { setIsAuthenticated(true); setRole(userRole); navigate(userRole === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard'); };
+      const handleLogout = () => { localStorage.removeItem('token'); localStorage.removeItem('role'); localStorage.removeItem('userName'); setIsAuthenticated(false); setRole(''); navigate('login'); };
+
+      if (!isAuthenticated || currentPage === 'login') return <LoginPage onLogin={handleLogin} />;
+
+      const renderPage = () => {
+        switch (currentPage) {
+          case 'student-dashboard': return <ProtectedRoute allowedRoles={['Student']}><StudentDashboard onNavigate={navigate} /></ProtectedRoute>;
+          case 'add-course': return <ProtectedRoute allowedRoles={['Student']}><AddCoursePage onNavigate={navigate} /></ProtectedRoute>;
+          case 'my-courses': return <ProtectedRoute allowedRoles={['Student']}><StudentCoursesPage onNavigate={navigate} /></ProtectedRoute>;
+          case 'requests': return <ProtectedRoute allowedRoles={['Student']}><RequestsPage onNavigate={navigate} /></ProtectedRoute>;
+          case 'results': return <ProtectedRoute allowedRoles={['Student']}><ViewResultsPage onNavigate={navigate} /></ProtectedRoute>;
+          case 'doctor-dashboard': return <ProtectedRoute allowedRoles={['Doctor']}><DoctorDashboard onNavigate={navigate} /></ProtectedRoute>;
+          case 'review-requests': return <ProtectedRoute allowedRoles={['Doctor']}><ReviewRequestsPage onNavigate={navigate} /></ProtectedRoute>;
+          default: return <div className="main-content"><div className="empty-state"><div className="empty-state-icon">🔍</div><div className="empty-state-title">Page Not Found</div><button className="btn btn-primary" onClick={() => navigate(role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard')} style={{ marginTop: 20 }}>Go to Dashboard</button></div></div>;
+        }
+      };
+
+      return <div className="app-layout"><Navbar currentPage={currentPage} onNavigate={navigate} onLogout={handleLogout} />{renderPage()}</div>;
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>

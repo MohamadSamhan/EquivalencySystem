@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>معاينة - لوحة الطالب</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .input-with-icon { position: relative; }
+      .input-with-icon .form-input { padding-right: 44px; }
+      .input-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; opacity: 0.5; pointer-events: none; }
+      .forgot-link { font-size: 13px; color: #7b82fd; text-decoration: none; }
+
+      /* Demo Banner */
+      .demo-banner {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        background: linear-gradient(135deg, #4a3fec, #2dd4bf);
+        color: white;
+        text-align: center;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .app-layout { padding-top: 40px; }
+
+      /* Demo mock data notice */
+      .mock-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: rgba(245,158,11,0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245,158,11,0.3);
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 8px;
+      }
+    </style>
+</head>
+<body>
+
+<!-- Demo Banner -->
+<div class="demo-banner">
+  🎓 وضع المعاينة — بيانات تجريبية
+  <a href="app.html" style="color:white;text-decoration:underline;margin-right:8px;">فتح النظام الكامل</a>
+</div>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+// ========== Mock Data ==========
+const MOCK_STATS = {
+  courses: 5,
+  pending: 2,
+  approved: 3,
+  rejected: 1
+};
+
+const MOCK_COURSES = [
+  { id: 1, courseName: 'مقدمة في علم الحاسوب', creditHours: 3, universityName: 'جامعة القاهرة' },
+  { id: 2, courseName: 'رياضيات تفاضل وتكامل', creditHours: 3, universityName: 'جامعة الإسكندرية' },
+  { id: 3, courseName: 'فيزياء عامة', creditHours: 3, universityName: 'جامعة القاهرة' },
+  { id: 4, courseName: 'برمجة متقدمة', creditHours: 3, universityName: 'جامعة عين شمس' },
+  { id: 5, courseName: 'قواعد البيانات', creditHours: 3, universityName: 'جامعة المنصورة' },
+];
+
+const MOCK_RESULTS = [
+  { id: 1, studentCourseName: 'مقدمة في علم الحاسوب', targetCourseName: 'أساسيات البرمجة', similarity: 85, status: 'Approved' },
+  { id: 2, studentCourseName: 'رياضيات تفاضل وتكامل', targetCourseName: 'رياضيات 1', similarity: 92, status: 'Approved' },
+  { id: 3, studentCourseName: 'فيزياء عامة', targetCourseName: 'فيزياء للمهندسين', similarity: 61, status: 'Approved' },
+  { id: 4, studentCourseName: 'برمجة متقدمة', targetCourseName: 'هياكل البيانات', similarity: 45, status: 'Pending' },
+  { id: 5, studentCourseName: 'قواعد البيانات', targetCourseName: 'نظم قواعد البيانات', similarity: 33, status: 'Rejected' },
+  { id: 6, studentCourseName: 'مقدمة في علم الحاسوب', targetCourseName: 'مقدمة للخوارزميات', similarity: null, status: 'Pending' },
+];
+
+const MOCK_UNIVERSITIES = [
+  { id: 1, name: 'جامعة القاهرة' },
+  { id: 2, name: 'جامعة الإسكندرية' },
+  { id: 3, name: 'جامعة عين شمس' },
+  { id: 4, name: 'جامعة المنصورة' },
+  { id: 5, name: 'جامعة حلوان' },
+  { id: 6, name: 'جامعة طنطا' },
+];
+
+const MOCK_TARGET_COURSES = [
+  { id: 1, courseName: 'أساسيات البرمجة', creditHours: 3 },
+  { id: 2, courseName: 'رياضيات 1', creditHours: 3 },
+  { id: 3, courseName: 'فيزياء للمهندسين', creditHours: 3 },
+  { id: 4, courseName: 'هياكل البيانات', creditHours: 3 },
+  { id: 5, courseName: 'نظم قواعد البيانات', creditHours: 3 },
+];
+
+// ========== Navbar ==========
+function Navbar({ currentPage, onNavigate, onLogout }) {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const links = [
+    { id: 'student-dashboard', label: 'الرئيسية', icon: '🏠' },
+    { id: 'add-course', label: 'إضافة مادة', icon: '📚' },
+    { id: 'my-courses', label: 'موادي', icon: '📋' },
+    { id: 'requests', label: 'طلب معادلة', icon: '🔄' },
+    { id: 'results', label: 'النتائج', icon: '📊' },
+  ];
+
+  return (
+    <>
+      <div className="mobile-header">
+        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
+        <span style={{ fontWeight: 700, fontSize: 15 }}>نظام معادلة المواد</span>
+      </div>
+      {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+      <nav className={`sidebar ${mobileOpen ? 'open' : ''}`} dir="rtl">
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="sidebar-brand-icon">🎓</div>
+            <div>
+              <div className="sidebar-brand-text">نظام المعادلة</div>
+              <div className="sidebar-brand-sub">AI-Powered System</div>
+            </div>
+          </div>
+        </div>
+        <div className="sidebar-nav">
+          <div className="sidebar-section-label">القائمة الرئيسية</div>
+          {links.map((link) => (
+            <button key={link.id} className={`sidebar-link ${currentPage === link.id ? 'active' : ''}`} onClick={() => { onNavigate(link.id); setMobileOpen(false); }}>
+              <span className="sidebar-link-icon">{link.icon}</span>
+              {link.label}
+            </button>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-user-avatar">أ</div>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">أحمد</div>
+              <div className="sidebar-user-role">طالب</div>
+            </div>
+          </div>
+          <button className="logout-btn" onClick={onLogout}>
+            <span className="sidebar-link-icon">🚪</span> تسجيل الخروج
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+
+// ========== Student Dashboard ==========
+function StudentDashboard({ onNavigate }) {
+  const actionCards = [
+    { id: 'add-course', icon: '📚', iconBg: 'blue', title: 'إضافة مادة', desc: 'أضف مادة أتممتها في جامعتك السابقة.' },
+    { id: 'my-courses', icon: '📋', iconBg: 'teal', title: 'موادي', desc: 'استعرض وأدر جميع موادك المضافة.' },
+    { id: 'requests', icon: '🔄', iconBg: 'green', title: 'طلب معادلة', desc: 'قدّم طلب معادلة لمادة جديدة.' },
+    { id: 'results', icon: '📊', iconBg: 'orange', title: 'النتائج', desc: 'تابع حالة ونتائج طلبات المعادلة.' },
+  ];
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">مرحباً، أحمد 👋</h1>
+        <p className="page-subtitle">نظرة عامة على نشاط طلبات معادلة موادك الجامعية.</p>
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="stat-card">
+          <div className="stat-card-icon blue">📚</div>
+          <div className="stat-card-value">{MOCK_STATS.courses}</div>
+          <div className="stat-card-label">المواد المضافة</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon orange">⏳</div>
+          <div className="stat-card-value">{MOCK_STATS.pending}</div>
+          <div className="stat-card-label">طلبات قيد الانتظار</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon green">✅</div>
+          <div className="stat-card-value">{MOCK_STATS.approved}</div>
+          <div className="stat-card-label">معتمدة</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-icon red">❌</div>
+          <div className="stat-card-value">{MOCK_STATS.rejected}</div>
+          <div className="stat-card-label">مرفوضة</div>
+        </div>
+      </div>
+
+      <div className="page-header" style={{ marginTop: 8 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>الإجراءات السريعة</h2>
+      </div>
+      <div className="action-cards">
+        {actionCards.map((card) => (
+          <div key={card.id} className="action-card" onClick={() => onNavigate(card.id)} tabIndex={0} role="button">
+            <div className={`action-card-icon stat-card-icon ${card.iconBg}`}>{card.icon}</div>
+            <div className="action-card-title">{card.title}</div>
+            <div className="action-card-desc">{card.desc}</div>
+            <div className="action-card-arrow">← انتقل إلى {card.title}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========== Add Course ==========
+function AddCoursePage({ onNavigate }) {
+  const [courseName, setCourseName] = React.useState('');
+  const [creditHours, setCreditHours] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [universityId, setUniversityId] = React.useState('');
+  const [pdfFile, setPdfFile] = React.useState(null);
+  const [success, setSuccess] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+      setError('');
+    } else if (file) {
+      setError('يرجى اختيار ملف PDF فقط.');
+      setPdfFile(null);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!courseName || !creditHours || !universityId) { setError('يرجى تعبئة جميع الحقول المطلوبة.'); return; }
+    setError('');
+    setSuccess(`تمت إضافة مادة "${courseName}" بنجاح! 🎉`);
+    setCourseName(''); setCreditHours(''); setDescription(''); setUniversityId('');
+    setTimeout(() => setSuccess(''), 4000);
+  };
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">إضافة مادة</h1>
+        <p className="page-subtitle">أضف المواد التي أتممتها في جامعتك السابقة.</p>
+      </div>
+      {success && <div className="alert alert-success"><span>✅</span> {success}</div>}
+      {error && <div className="alert alert-error"><span>⚠️</span> {error}</div>}
+      <div className="form-card">
+        <h2 className="card-title">معلومات المادة</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">اسم المادة *</label>
+            <input className="form-input" type="text" placeholder="مثال: مقدمة في علم الحاسوب" value={courseName} onChange={e => setCourseName(e.target.value)} />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">ساعات الكريدت *</label>
+              <input className="form-input" type="number" min="1" max="6" placeholder="مثال: 3" value={creditHours} onChange={e => setCreditHours(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">الجامعة *</label>
+              <select className="form-select" value={universityId} onChange={e => setUniversityId(e.target.value)}>
+                <option value="">اختر الجامعة</option>
+                {MOCK_UNIVERSITIES.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">وصف المادة</label>
+            <textarea className="form-textarea" placeholder="اكتب وصفاً مختصراً عن محتوى المادة..." value={description} onChange={e => setDescription(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">ملف وصف المادة (PDF) *</label>
+            <div className="file-upload-container" style={{ 
+              border: '2px dashed rgba(226, 232, 240, 0.1)', 
+              borderRadius: '12px', 
+              padding: '20px', 
+              textAlign: 'center',
+              background: 'rgba(30, 41, 59, 0.5)',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }} onClick={() => document.getElementById('pdf-upload').click()}>
+              <input 
+                id="pdf-upload" 
+                type="file" 
+                accept=".pdf" 
+                style={{ display: 'none' }} 
+                onChange={handleFileChange}
+              />
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>📄</div>
+              <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                {pdfFile ? `تم اختيار: ${pdfFile.name}` : 'اضغط هنا لرفع ملف PDF لوصف المادة'}
+              </div>
+              {pdfFile && (
+                <button 
+                  type="button" 
+                  style={{ 
+                    marginTop: '10px', 
+                    background: 'rgba(239, 68, 68, 0.1)', 
+                    color: '#ef4444', 
+                    border: '1px solid #ef4444',
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}
+                  onClick={(e) => { e.stopPropagation(); setPdfFile(null); }}
+                >
+                  إلغاء الملف
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary">📚 إضافة المادة</button>
+            <button type="button" className="btn btn-outline" onClick={() => onNavigate('my-courses')}>عرض موادي</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ========== My Courses ==========
+function StudentCoursesPage({ onNavigate }) {
+  const [courses, setCourses] = React.useState(MOCK_COURSES);
+
+  const handleDelete = (id) => {
+    if (!confirm('هل أنت متأكد من حذف هذه المادة؟')) return;
+    setCourses(courses.filter(c => c.id !== id));
+  };
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">موادي</h1>
+        <p className="page-subtitle">المواد التي أضفتها من جامعتك السابقة.</p>
+      </div>
+      <div className="table-container">
+        <div className="table-header">
+          <div className="table-title">قائمة المواد ({courses.length})</div>
+          <button className="btn btn-primary btn-sm" onClick={() => onNavigate('add-course')}>+ إضافة مادة</button>
+        </div>
+        {courses.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📚</div>
+            <div className="empty-state-title">لا توجد مواد بعد</div>
+            <div className="empty-state-desc">ابدأ بإضافة موادك من جامعتك السابقة.</div>
+            <button className="btn btn-primary" onClick={() => onNavigate('add-course')} style={{ marginTop: 20 }}>+ أضف أول مادة</button>
+          </div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>اسم المادة</th>
+                  <th>ساعات الكريدت</th>
+                  <th>الجامعة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.map((course, idx) => (
+                  <tr key={course.id}>
+                    <td style={{ color: '#64748b' }}>{idx + 1}</td>
+                    <td style={{ fontWeight: 600, color: '#e2e8f0' }}>{course.courseName}</td>
+                    <td>{course.creditHours}</td>
+                    <td>{course.universityName}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-primary btn-sm" onClick={() => onNavigate('requests')}>طلب معادلة</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(course.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ========== Requests ==========
+function RequestsPage({ onNavigate }) {
+  const [selectedStudent, setSelectedStudent] = React.useState('');
+  const [selectedTarget, setSelectedTarget] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedStudent || !selectedTarget) { setError('يرجى اختيار المادتين.'); return; }
+    const sName = MOCK_COURSES.find(c => c.id == selectedStudent)?.courseName;
+    const tName = MOCK_TARGET_COURSES.find(c => c.id == selectedTarget)?.courseName;
+    setError('');
+    setSuccess(`تم تقديم طلب معادلة "${sName}" → "${tName}" بنجاح! الحالة: قيد الانتظار 🎉`);
+    setSelectedStudent(''); setSelectedTarget('');
+    setTimeout(() => setSuccess(''), 5000);
+  };
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">طلب معادلة</h1>
+        <p className="page-subtitle">قدّم طلب معادلة عن طريق اختيار مادتك والمادة المستهدفة.</p>
+      </div>
+      {success && <div className="alert alert-success"><span>✅</span> {success}</div>}
+      {error && <div className="alert alert-error"><span>⚠️</span> {error}</div>}
+      <div className="form-card">
+        <h2 className="card-title">نموذج طلب المعادلة</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">مادتك (من الجامعة السابقة) *</label>
+            <select className="form-select" value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}>
+              <option value="">اختر مادتك</option>
+              {MOCK_COURSES.map(c => <option key={c.id} value={c.id}>{c.courseName} ({c.creditHours} ساعات)</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">المادة المستهدفة *</label>
+            <select className="form-select" value={selectedTarget} onChange={e => setSelectedTarget(e.target.value)}>
+              <option value="">اختر المادة المستهدفة</option>
+              {MOCK_TARGET_COURSES.map(c => <option key={c.id} value={c.id}>{c.courseName} ({c.creditHours} ساعات)</option>)}
+            </select>
+          </div>
+          {selectedStudent && selectedTarget && (
+            <div className="alert alert-info" style={{ marginBottom: 24 }}>
+              <span>ℹ️</span>
+              <div>
+                <strong>معاينة:</strong>{' '}
+                <em>"{MOCK_COURSES.find(c => c.id == selectedStudent)?.courseName}"</em>
+                {' → '}
+                <em>"{MOCK_TARGET_COURSES.find(c => c.id == selectedTarget)?.courseName}"</em>
+              </div>
+            </div>
+          )}
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary">🔄 تقديم الطلب</button>
+            <button type="button" className="btn btn-outline" onClick={() => onNavigate('results')}>عرض النتائج</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ========== View Results ==========
+function ViewResultsPage({ onNavigate }) {
+  const [filter, setFilter] = React.useState('الكل');
+  const tabs = ['الكل', 'قيد الانتظار', 'معتمدة', 'مرفوضة'];
+  const statusMap = { 'قيد الانتظار': 'Pending', 'معتمدة': 'Approved', 'مرفوضة': 'Rejected' };
+
+  const filtered = filter === 'الكل' ? MOCK_RESULTS : MOCK_RESULTS.filter(r => r.status === statusMap[filter]);
+  const getBadge = (s) => s === 'Approved' ? 'badge-approved' : s === 'Rejected' ? 'badge-rejected' : 'badge-pending';
+  const getLabel = (s) => s === 'Approved' ? 'معتمدة' : s === 'Rejected' ? 'مرفوضة' : 'قيد الانتظار';
+  const simColor = (s) => s >= 70 ? '#22c55e' : s >= 40 ? '#f59e0b' : '#ef4444';
+  const simClass = (s) => s >= 70 ? 'high' : s >= 40 ? 'medium' : 'low';
+
+  return (
+    <div className="main-content" dir="rtl">
+      <div className="page-header">
+        <h1 className="page-title">نتائج المعادلة</h1>
+        <p className="page-subtitle">تابع حالة ونتائج طلبات معادلة موادك.</p>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {tabs.map(tab => (
+          <button key={tab} className={`btn btn-sm ${filter === tab ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter(tab)} style={{ animationName: 'none' }}>
+            {tab}
+            {tab !== 'الكل' && (
+              <span style={{ marginRight: 6, opacity: 0.7 }}>({MOCK_RESULTS.filter(r => r.status === statusMap[tab]).length})</span>
+            )}
+          </button>
+        ))}
+      </div>
+      <div className="table-container">
+        <div className="table-header">
+          <div className="table-title">النتائج ({filtered.length})</div>
+          <button className="btn btn-primary btn-sm" onClick={() => onNavigate('requests')}>+ طلب جديد</button>
+        </div>
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>مادتي</th>
+                <th>المادة المستهدفة</th>
+                <th>نسبة التشابه</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((req, idx) => (
+                <tr key={req.id}>
+                  <td style={{ color: '#64748b' }}>{idx + 1}</td>
+                  <td style={{ fontWeight: 600, color: '#e2e8f0' }}>{req.studentCourseName}</td>
+                  <td>{req.targetCourseName}</td>
+                  <td>
+                    {req.similarity != null ? (
+                      <div className="similarity-bar">
+                        <div className="similarity-track">
+                          <div className={`similarity-fill ${simClass(req.similarity)}`} style={{ width: `${req.similarity}%` }} />
+                        </div>
+                        <span className="similarity-value" style={{ color: simColor(req.similarity) }}>{req.similarity}%</span>
+                      </div>
+                    ) : <span style={{ color: '#64748b' }}>—</span>}
+                  </td>
+                  <td>
+                    <span className={`badge ${getBadge(req.status)}`}>
+                      <span className="badge-dot"></span>
+                      {getLabel(req.status)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== App ==========
+function App() {
+  const [page, setPage] = React.useState('student-dashboard');
+
+  const navigate = (p) => { setPage(p); window.scrollTo(0,0); };
+  const handleLogout = () => { window.location.href = 'app.html'; };
+
+  const renderPage = () => {
+    switch (page) {
+      case 'student-dashboard': return <StudentDashboard onNavigate={navigate} />;
+      case 'add-course': return <AddCoursePage onNavigate={navigate} />;
+      case 'my-courses': return <StudentCoursesPage onNavigate={navigate} />;
+      case 'requests': return <RequestsPage onNavigate={navigate} />;
+      case 'results': return <ViewResultsPage onNavigate={navigate} />;
+      default: return <StudentDashboard onNavigate={navigate} />;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Navbar currentPage={page} onNavigate={navigate} onLogout={handleLogout} />
+      {renderPage()}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
