@@ -1,0 +1,133 @@
+/* ============================================
+   Request Equivalency Page — Modular Design
+   ============================================ */
+.request-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+}
+
+.how-it-works-card {
+  background: rgba(9, 15, 36, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(123,130,253,0.12);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  animation: fadeInUp 0.6s ease 0.15s both;
+  transition: border-color var(--transition-base);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.how-it-works-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: color var(--transition-theme);
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(91,94,247,0.45), 0 0 0 3px rgba(91,94,247,0.1);
+}
+
+.step-content strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  transition: color var(--transition-theme);
+}
+
+.step-content span {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  transition: color var(--transition-theme);
+}
+
+/* Course preview box */
+.course-preview-box {
+  background: rgba(91,94,247,0.06);
+  border: 1px solid rgba(91,94,247,0.15);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  animation: scaleIn 0.25s ease;
+}
+
+.course-preview-box .preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--primary-400);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-courses {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.preview-course-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background var(--transition-theme), color var(--transition-theme);
+  flex: 1;
+  text-align: center;
+}
+
+.preview-arrow {
+  font-size: 18px;
+  color: var(--primary-400);
+  flex-shrink: 0;
+}
+
+/* Input hint for course not found */
+.course-hint {
+  font-size: 12px;
+  color: var(--warning-500);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-hint a {
+  color: var(--primary-400);
+  cursor: pointer;
+  text-decoration: underline;
+}

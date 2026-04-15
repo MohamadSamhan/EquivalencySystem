@@ -5,6 +5,7 @@ function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [remember, setRemember] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -14,7 +15,7 @@ function LoginPage() {
     setError('');
 
     if (!email || !password) {
-      setError('يرجى إدخال الرقم الجامعي أو البريد الإلكتروني وكلمة المرور');
+      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
@@ -28,14 +29,13 @@ function LoginPage() {
         localStorage.removeItem('rememberedUser');
       }
 
-      // Navigation is now handled by the role returned from login
       const defaultPage = result.role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard';
       window.location.hash = '#/' + defaultPage;
 
     } catch (err) {
       console.error('Login error:', err);
       if (err.response) {
-        setError(err.response.data?.message || 'الرقم الجامعي أو كلمة المرور غير صحيحة');
+        setError(err.response.data?.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
       } else {
         setError('لا يمكن الاتصال بالخادم. يرجى التأكد من تشغيل الـ API.');
       }
@@ -66,66 +66,78 @@ function LoginPage() {
             </div>
           </div>
           <h1 className="login-title">نظام معادلة المواد الجامعية</h1>
-          <p className="login-info-text">سجّل دخولك للمتابعة</p>
+          <p className="login-info-text">سجّل دخولك للمتابعة في النظام</p>
         </div>
 
         {error && (
-          <div className="alert alert-error" style={{ marginBottom: 20 }}>
-            <span>⚠️</span> {error}
+          <div className="alert alert-error">
+             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="sis-form-group">
-            <input
-              id="login-email"
-              className="sis-input"
-              type="email"
-              placeholder="الإيميل الجامعي"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              dir="ltr"
-              style={{ textAlign: 'right', paddingLeft: 15, paddingRight: 45 }}
-            />
-            <span className="sis-input-icon">👤</span>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label className="form-label" htmlFor="login-email">البريد الإلكتروني الجامعي</label>
+            <div className="input-wrapper">
+              <input
+                id="login-email"
+                type="email"
+                placeholder="example@univ.edu.jo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                dir="ltr"
+              />
+              <span className="material-icons input-icon">person</span>
+            </div>
           </div>
 
-          <div className="sis-form-group">
-            <input
-              id="login-password"
-              className="sis-input"
-              type="password"
-              placeholder="كلمة المرور"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-            <span className="sis-input-icon">🔑</span>
+          <div className="form-group">
+            <label className="form-label" htmlFor="login-password">كلمة المرور</label>
+            <div className="input-wrapper">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+              <span className="material-icons input-icon">lock</span>
+              <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              >
+                <span className="material-icons" style={{ fontSize: '20px' }}>
+                  {showPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
           </div>
 
-          <div className="form-footer-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <label className="sis-checkbox-container" style={{ margin: 0 }}>
-              الاحتفاظ بإسم المستخدم
+          <div className="form-footer-actions">
+            <label className="checkbox-container">
               <input
                 type="checkbox"
-                className="sis-checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
               />
+              <span>تذكرني على هذا الجهاز</span>
             </label>
-           
+            <a href="#" className="forgot-password-link">نسيت كلمة المرور؟</a>
           </div>
 
           <button
             type="submit"
-            className="sis-submit-btn"
+            className="login-btn"
             disabled={loading}
           >
             {loading ? (
               <>
                 <span className="spinner"></span>
-                جاري الدخول...
+                جاري التحقق...
               </>
             ) : (
               <>تسجيل الدخول</>
