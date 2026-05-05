@@ -15,6 +15,8 @@ namespace Infrastacture
         public DbSet<StudentCourse> StudentCourses => Set<StudentCourse>();
         public DbSet<EquivalencyRequest> EquivalencyRequests => Set<EquivalencyRequest>();
         public DbSet<University> Universities => Set<University>();
+        public DbSet<TransferRequest> TransferRequests => Set<TransferRequest>();
+        public DbSet<TrainingCertificateRequest> TrainingCertificateRequests => Set<TrainingCertificateRequest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +54,34 @@ namespace Infrastacture
                 .HasOne(er => er.TargetCourse)
                 .WithMany()
                 .HasForeignKey(er => er.TargetCourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // TransferRequest
+            modelBuilder.Entity<TransferRequest>()
+                .HasOne(t => t.Student)
+                .WithMany()
+                .HasForeignKey(t => t.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TransferRequest>()
+                .HasOne(t => t.University)
+                .WithMany()
+                .HasForeignKey(t => t.UniversityId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // TrainingCertificateRequest
+            modelBuilder.Entity<TrainingCertificateRequest>()
+                .HasOne(t => t.Student)
+                .WithMany()
+                .HasForeignKey(t => t.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TrainingCertificateRequest>()
+                .HasOne(t => t.ReviewedByDoctor)
+                .WithMany()
+                .HasForeignKey(t => t.ReviewedByDoctorId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

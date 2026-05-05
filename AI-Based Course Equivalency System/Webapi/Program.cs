@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Service;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace Webapi
@@ -44,23 +43,28 @@ namespace Webapi
                 };
             });
 
-            // Add DbContext (configure your connection string in appsettings.json)
+            // Add DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("constring")));
 
             // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<ISimilarityService, SimilarityService>();
             builder.Services.AddScoped<IEquivalencyService, EquivalencyService>();
+            builder.Services.AddScoped<ITranscriptService, TranscriptService>();
+            builder.Services.AddScoped<IAdminService, AdminService>();
 
-            // quick startup validation / developer notice
+            // HTTP client + OpenAI singleton
+            builder.Services.AddHttpClient();
+            builder.Services.AddSingleton<ISimilarityService, OpenAiSimilarityService>();
+
+            // Startup warning if API key missing
             var openAiKey = builder.Configuration["OpenAI:ApiKey"];
             if (string.IsNullOrEmpty(openAiKey))
             {
-                Console.WriteLine("Warning: OpenAI:ApiKey not configured. Set environment variable 'OpenAI__ApiKey' or add 'OpenAI:ApiKey' in appsettings.json.");
+                Console.WriteLine("Warning: OpenAI:ApiKey not configured. Set 'OpenAI__ApiKey' env var or add to appsettings.json.");
             }
 
-            // CORS policies
+            // CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend5500", policy =>
@@ -72,7 +76,13 @@ namespace Webapi
                 });
             });
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(opts =>
+                {
+                    // استخدم UserRoleConverter فقط — يقبل رقم ونص عربي وإنجليزي
+                    opts.JsonSerializerOptions.Converters.Add(new Domine.Dtos.UserRoleConverter());
+                    opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                });
             builder.Services.AddOpenApi();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -80,22 +90,18 @@ namespace Webapi
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
-            {
                 app.MapOpenApi();
-            }
 
             app.UseDeveloperExceptionPage();
             app.UseSwagger();
             app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
-
             app.UseCors("AllowFrontend5500");
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-
             app.Run();
         }
     }

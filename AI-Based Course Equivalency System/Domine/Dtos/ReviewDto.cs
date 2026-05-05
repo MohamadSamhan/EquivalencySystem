@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domine.Enum
+namespace Domine.Dtos
 {
-    public enum UserRole
+    public class ReviewDto
     {
-        Student = 0,
-        Doctor = 1,
-        Admin = 2
+        public string? Notes { get; set; }
     }
 }

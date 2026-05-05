@@ -16,11 +16,17 @@ namespace Domine.Entity
         [MaxLength(250)]
         public string CourseName { get; set; } = null!;
 
+        /// <summary>Provider / training center name (e.g. Coursera, Udemy, etc.)</summary>
+        [MaxLength(300)]
+        public string? ProviderName { get; set; }
+
         public int CreditHours { get; set; }
+
+        /// <summary>Actual training hours on the certificate</summary>
+        public int TrainingHours { get; set; }
 
         public string? Description { get; set; }
 
-        // Replace free-text UniversityName with a FK to predefined universities
         [Required]
         [ForeignKey(nameof(University))]
         public int UniversityId { get; set; }
@@ -29,7 +35,6 @@ namespace Domine.Entity
 
         public User? Student { get; set; }
 
-        // Added fields to store uploaded file metadata
         public string? UploadedFilePath { get; set; }
         public string? UploadedFileName { get; set; }
         public string? UploadedFileHash { get; set; }

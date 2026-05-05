@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domine.Entity
 {
-    public class EquivalencyRequest
+    public class TrainingCertificateRequest
     {
         public int Id { get; set; }
 
@@ -14,27 +14,28 @@ namespace Domine.Entity
         public int StudentId { get; set; }
 
         [Required]
-        [ForeignKey(nameof(StudentCourse))]
-        public int StudentCourseId { get; set; }
+        [MaxLength(300)]
+        public string TrainingTitle { get; set; } = string.Empty;
 
         [Required]
-        [ForeignKey(nameof(TargetCourse))]
-        public int TargetCourseId { get; set; }
+        [MaxLength(300)]
+        public string TrainingProvider { get; set; } = string.Empty;
 
-        public int SimilarityScore { get; set; }
+        [Required]
+        public int TrainingHours { get; set; }
 
-        /// <summary>AI-generated recommendation: AutoApproved, RecommendToDoctor, ManualEvaluation</summary>
-        [MaxLength(50)]
-        public string? Recommendation { get; set; }
+        [MaxLength(500)]
+        public string? CertificateFilePath { get; set; }
+
+        [MaxLength(500)]
+        public string? CertificateFileName { get; set; }
 
         [Required]
         public RequestStatus Status { get; set; } = RequestStatus.Pending;
 
-        /// <summary>Doctor who reviewed this request (null if pending or auto-approved)</summary>
         [ForeignKey(nameof(ReviewedByDoctor))]
         public int? ReviewedByDoctorId { get; set; }
 
-        /// <summary>Reviewer notes / reason for approval or rejection</summary>
         [MaxLength(1000)]
         public string? ReviewerNotes { get; set; }
 
@@ -44,7 +45,5 @@ namespace Domine.Entity
 
         public User? Student { get; set; }
         public User? ReviewedByDoctor { get; set; }
-        public StudentCourse? StudentCourse { get; set; }
-        public Course? TargetCourse { get; set; }
     }
 }

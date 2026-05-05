@@ -4,6 +4,7 @@ using Infrastacture;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastacture.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260418150209_addadminandmore")]
+    partial class addadminandmore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,118 +155,6 @@ namespace Infrastacture.Migrations
                     b.ToTable("StudentCourses");
                 });
 
-            modelBuilder.Entity("Domine.Entity.TrainingCertificateRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CertificateFileName")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("CertificateFilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ReviewedByDoctorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReviewerNotes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TrainingHours")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TrainingProvider")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("TrainingTitle")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReviewedByDoctorId");
-
-                    b.HasIndex("StudentId");
-
-                    b.ToTable("TrainingCertificateRequests");
-                });
-
-            modelBuilder.Entity("Domine.Entity.TransferRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DepartmentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FacultyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MajorName")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("OldStudentId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TranscriptFileName")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TranscriptFilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("TransferType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UniversityId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UniversityName")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("UniversityId");
-
-                    b.ToTable("TransferRequests");
-                });
-
             modelBuilder.Entity("Domine.Entity.University", b =>
                 {
                     b.Property<int>("Id")
@@ -365,42 +256,6 @@ namespace Infrastacture.Migrations
                         .HasForeignKey("UniversityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Student");
-
-                    b.Navigation("University");
-                });
-
-            modelBuilder.Entity("Domine.Entity.TrainingCertificateRequest", b =>
-                {
-                    b.HasOne("Domine.Entity.User", "ReviewedByDoctor")
-                        .WithMany()
-                        .HasForeignKey("ReviewedByDoctorId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Domine.Entity.User", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReviewedByDoctor");
-
-                    b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("Domine.Entity.TransferRequest", b =>
-                {
-                    b.HasOne("Domine.Entity.User", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domine.Entity.University", "University")
-                        .WithMany()
-                        .HasForeignKey("UniversityId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Student");
 

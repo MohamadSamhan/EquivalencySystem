@@ -44,6 +44,10 @@ namespace Domine.Dtos
         // File download URL for doctor to view student's uploaded PDF
         public string? StudentFileUrl { get; set; }
         public string? StudentFileName { get; set; }
+        // Reviewer decision history
+        public string? ReviewerNotes { get; set; }
+        public string? ReviewedByDoctorName { get; set; }
+        public string? ReviewedAt { get; set; }
     }
 }
 
