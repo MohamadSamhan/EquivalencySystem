@@ -111,7 +111,7 @@ function AddCoursePage({ onNavigate }) {
         </div>
       )}
 
-      <div className="add-course-layout">
+      <div className="add-course-layout training-submit-layout">
         {/* Main Form Card */}
         <div className="form-card" style={{ maxWidth: '100%' }}>
           <h2 className="card-title">معلومات المساق</h2>
@@ -229,15 +229,15 @@ function AddCoursePage({ onNavigate }) {
           </form>
         </div>
 
-        {/* Tips - Horizontal Grid */}
+        {/* Tips - Vertical Sidebar */}
         <div className="add-course-sidebar-card">
           <h3>💡 نصائح للإضافة الصحيحة</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '4px' }}>
-            <div className="tip-item"><span className="tip-icon">📌</span><span>تأكد من كتابة اسم المساق كما هو مذكور في كشف علاماتك الرسمي.</span></div>
-            <div className="tip-item"><span className="tip-icon">⏱️</span><span>أدخل عدد الساعات المعتمدة الصحيح للمساق (عادةً بين 1 و6 ساعات).</span></div>
-            <div className="tip-item"><span className="tip-icon">🎓</span><span>اختر الجامعة التي درست فيها هذا المساق بدقة.</span></div>
-            <div className="tip-item"><span className="tip-icon">📄</span><span>ارفع ملف PDF لوصف المساق لتحسين دقة المقارنة.</span></div>
-            <div className="tip-item"><span className="tip-icon">✍️</span><span>الوصف النصي يساعد النظام على فهم محتوى المساق بشكل أفضل.</span></div>
+          <div className="tips-grid training-tips-grid">
+            <div className="tip-item training-tip-item"><span className="tip-icon">📌</span><span>تأكد من كتابة اسم المساق كما هو مذكور في كشف علاماتك الرسمي.</span></div>
+            <div className="tip-item training-tip-item"><span className="tip-icon">⏱️</span><span>أدخل عدد الساعات المعتمدة الصحيح للمساق (عادةً بين 1 و6 ساعات).</span></div>
+            <div className="tip-item training-tip-item"><span className="tip-icon">🎓</span><span>اختر الجامعة التي درست فيها هذا المساق بدقة.</span></div>
+            <div className="tip-item training-tip-item"><span className="tip-icon">📄</span><span>ارفع ملف PDF لوصف المساق لتحسين دقة المقارنة.</span></div>
+            <div className="tip-item training-tip-item"><span className="tip-icon">✍️</span><span>الوصف النصي يساعد النظام على فهم محتوى المساق بشكل أفضل.</span></div>
           </div>
         </div>
       </div>

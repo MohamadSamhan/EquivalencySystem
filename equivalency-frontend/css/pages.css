@@ -271,12 +271,20 @@
    ============================================ */
 .request-layout {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 24px;
-  max-width: 720px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.request-layout .form-card {
+  flex: 1 1 68%;
+  max-width: none;
 }
 
 .how-it-works-card {
+  flex: 0 0 300px;
   background: rgba(9, 15, 36, 0.55);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -334,6 +342,46 @@
   color: var(--text-muted);
   line-height: 1.4;
   transition: color var(--transition-theme);
+}
+
+/* Training equivalency submit section layout */
+.training-submit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+}
+
+.training-submit-layout .form-card {
+  max-width: none !important;
+}
+
+.training-submit-layout .add-course-sidebar-card {
+  height: fit-content;
+}
+
+.training-tips-grid {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.training-tip-item {
+  justify-content: flex-start;
+}
+
+@media (max-width: 980px) {
+  .request-layout {
+    flex-direction: column;
+  }
+
+  .how-it-works-card {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .training-submit-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Course preview box */

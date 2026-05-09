@@ -82,6 +82,18 @@ function DoctorDashboard({ onNavigate }) {
           <div className="action-card-desc">مراجعة طلبات معادلة الطلاب والموافقة عليها أو رفضها.</div>
           <div className="action-card-arrow">انتقل إلى المراجعات ←</div>
         </div>
+        <div
+          className="action-card"
+          onClick={() => onNavigate('review-training-requests')}
+          tabIndex={0}
+          role="button"
+          onKeyDown={(e) => e.key === 'Enter' && onNavigate('review-training-requests')}
+        >
+          <div className="action-card-icon stat-card-icon purple">🎓</div>
+          <div className="action-card-title">مراجعة الشهادات التدريبية</div>
+          <div className="action-card-desc">قسم منفصل لطلبات معادلة الشهادات التدريبية مع قبول أو رفض من الدكتور.</div>
+          <div className="action-card-arrow">انتقل إلى شهادات التدريب ←</div>
+        </div>
       </div>
 
       {recentRequests.length > 0 && (

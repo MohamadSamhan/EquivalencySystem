@@ -74,3 +74,41 @@ const requestsAPI = {
 const coursesAPI = {
   getAll: () => api.get('/courses'),
 };
+
+// ========== Training Certificates API ==========
+const trainingAPI = {
+  submit: (formData) => api.post('/training-requests', formData),
+  getMyRequests: () => api.get('/training-requests/my'),
+  getAll: () => api.get('/training-requests'),
+  approve: (id) => api.put(`/training-requests/${id}/approve`),
+  reject: (id) => api.put(`/training-requests/${id}/reject`),
+};
+
+// ========== Admin APIs ==========
+const adminUniversitiesAPI = {
+  getAll: () => api.get('/universities'),
+  create: (data) => api.post('/universities', data),
+  update: (id, data) => api.put(`/universities/${id}`, data),
+  delete: (id) => api.delete(`/universities/${id}`),
+};
+
+const adminCoursesAPI = {
+  getAll: () => api.get('/courses'),
+  create: (data) => api.post('/courses', data),
+  update: (id, data) => api.put(`/courses/${id}`, data),
+  delete: (id) => api.delete(`/courses/${id}`),
+};
+
+const adminDepartmentsAPI = {
+  getAll: () => api.get('/departments'),
+  create: (data) => api.post('/departments', data),
+  update: (id, data) => api.put(`/departments/${id}`, data),
+  delete: (id) => api.delete(`/departments/${id}`),
+};
+
+const adminUsersAPI = {
+  getAll: () => api.get('/users'),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
+};

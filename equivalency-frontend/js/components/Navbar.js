@@ -17,18 +17,29 @@ function Navbar({ currentPage, onNavigate }) {
 
   const studentLinks = [
     { id: 'student-dashboard', label: 'لوحة التحكم', icon: '🏠' },
+    { id: 'requests', label: 'طلب معادلة', icon: '🔄' },
     { id: 'add-course', label: 'إضافة مساق', icon: '📚' },
     { id: 'my-courses', label: 'مساقاتي', icon: '📋' },
-    { id: 'requests', label: 'طلب معادلة', icon: '🔄' },
     { id: 'results', label: 'عرض النتائج', icon: '📊' },
+    { id: 'training-equivalency', label: 'معادلة شهادات', icon: '🎓' },
   ];
 
   const doctorLinks = [
     { id: 'doctor-dashboard', label: 'لوحة التحكم', icon: '🏠' },
     { id: 'review-requests', label: 'مراجعة الطلبات', icon: '📝' },
+    { id: 'review-training-requests', label: 'مراجعة الشهادات', icon: '🎓' },
   ];
 
-  const links = role === 'Doctor' ? doctorLinks : studentLinks;
+  const adminLinks = [
+    { id: 'admin-dashboard', label: 'لوحة التحكم', icon: '🏠' },
+    { id: 'admin-training-requests', label: 'طلبات الشهادات', icon: '🎓' },
+    { id: 'manage-universities', label: 'إدارة الجامعات', icon: '🏛️' },
+    { id: 'manage-courses', label: 'إدارة المساقات', icon: '📚' },
+    { id: 'manage-departments', label: 'إدارة الأقسام', icon: '🏢' },
+    { id: 'manage-users', label: 'إدارة المستخدمين', icon: '👥' },
+  ];
+
+  const links = role === 'Admin' ? adminLinks : role === 'Doctor' ? doctorLinks : studentLinks;
 
   const handleNav = (pageId) => {
     onNavigate(pageId);
@@ -86,7 +97,7 @@ function Navbar({ currentPage, onNavigate }) {
               </div>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">{userName}</div>
-                <div className="sidebar-user-role">{role === 'Doctor' ? 'دكتور' : 'طالب'}</div>
+                <div className="sidebar-user-role">{role === 'Doctor' ? 'دكتور' : role === 'Admin' ? 'مدير' : 'طالب'}</div>
               </div>
             </div>
             <button 

@@ -14,7 +14,7 @@ function AppContent() {
         setCurrentPage('login');
       } else if (isAuthenticated && (!hash || hash === 'login')) {
         // Redirect to default dashboard if authenticated but on login or empty hash
-        const defaultPage = role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard';
+        const defaultPage = role === 'Admin' ? 'admin-dashboard' : role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard';
         navigate(defaultPage);
       } else {
         setCurrentPage(hash);
@@ -77,10 +77,28 @@ function RenderPage({ pageId, onNavigate, role }) {
       return <ProtectedRoute allowedRoles={['Student']}><RequestsPage onNavigate={onNavigate} /></ProtectedRoute>;
     case 'results':
       return <ProtectedRoute allowedRoles={['Student']}><ViewResultsPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'training-equivalency':
+      return <ProtectedRoute allowedRoles={['Student']}><TrainingEquivalencyPage onNavigate={onNavigate} /></ProtectedRoute>;
 
     // Doctor Pages
     case 'review-requests':
       return <ProtectedRoute allowedRoles={['Doctor']}><ReviewRequestsPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'review-training-requests':
+      return <ProtectedRoute allowedRoles={['Doctor']}><TrainingRequestsReviewPage onNavigate={onNavigate} /></ProtectedRoute>;
+
+    // Admin Pages
+    case 'admin-dashboard':
+      return <ProtectedRoute allowedRoles={['Admin']}><AdminDashboard onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'admin-training-requests':
+      return <ProtectedRoute allowedRoles={['Admin']}><AdminTrainingRequestsPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'manage-universities':
+      return <ProtectedRoute allowedRoles={['Admin']}><ManageUniversitiesPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'manage-courses':
+      return <ProtectedRoute allowedRoles={['Admin']}><ManageCoursesPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'manage-departments':
+      return <ProtectedRoute allowedRoles={['Admin']}><ManageDepartmentsPage onNavigate={onNavigate} /></ProtectedRoute>;
+    case 'manage-users':
+      return <ProtectedRoute allowedRoles={['Admin']}><ManageUsersPage onNavigate={onNavigate} /></ProtectedRoute>;
 
     // Fallbacks
     case '':
@@ -93,7 +111,7 @@ function RenderPage({ pageId, onNavigate, role }) {
           <button 
             className="btn btn-primary" 
             style={{ marginTop: 24 }}
-            onClick={() => onNavigate(role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard')}
+            onClick={() => onNavigate(role === 'Admin' ? 'admin-dashboard' : role === 'Doctor' ? 'doctor-dashboard' : 'student-dashboard')}
           >
             العودة للرئيسية
           </button>
